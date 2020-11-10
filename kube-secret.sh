@@ -24,13 +24,13 @@ COMMAND=$1
 SECRET=$2
 
 if [ "$COMMAND" == "read" ]; then
-  SECRET_JSON="$(kubectl get --ignore-not-found secret $SECRET -o json)"
+  SECRET_JSON="$(kubectl get --ignore-not-found secret "$SECRET" -o json)"
   if [ -z "$SECRET_JSON" ]; then
     error "No match for given secret $SECRET"
     exit 1
   fi
-  if [ ! -z "$3" ]; then
-    OUTPUT="$(echo $SECRET_JSON | jq -r '.data | keys[] as $k | "\($k): \(.[$k] | @base64d)"' | grep $3)"
+  if [ -n "$3" ]; then
+    OUTPUT="$(echo "$SECRET_JSON" | jq -r '.data | keys[] as $k | "\($k): \(.[$k] | @base64d)"' | grep "$3")"
     if [ -z "$OUTPUT" ]; then
       error "No match for given key name $3"
       exit 1
@@ -43,7 +43,7 @@ if [ "$COMMAND" == "read" ]; then
 fi
 
 if [ "$COMMAND" == "edit" ]; then
-  SECRET_JSON="$(kubectl get --ignore-not-found secret $SECRET -o json)"
+  SECRET_JSON="$(kubectl get --ignore-not-found secret "$SECRET" -o json)"
   if [ -z "$SECRET_JSON" ]; then
     error "No match for given secret $SECRET"
     exit 1
@@ -56,13 +56,13 @@ if [ "$COMMAND" == "edit" ]; then
     error "No value given for key (this script doesn't support key deletion yet"
     help
   fi
-  EXISTING="$(echo $SECRET_JSON | jq -r '.data | keys[] as $k | "\($k): \(.[$k] | @base64d)"' | grep $3)"
-  if [ ! -z "$EXISTING" ]; then
-    read -p "Key $3 already has a value, do you want to overwrite ? (Y/n)" answer
+  EXISTING="$(echo "$SECRET_JSON" | jq -r '.data | keys[] as $k | "\($k): \(.[$k] | @base64d)"' | grep "$3")"
+  if [ -n "$EXISTING" ]; then
+    read -pr "Key $3 already has a value, do you want to overwrite ? (Y/n)" answer
     case ${answer:0:1} in
         y|Y )
             echo "Cowardly dumping old value and overwriting value for key $3"
-            echo $SECRET_JSON | jq -r '.data | keys[] as $k | "\($k): \(.[$k] | @base64d)"' | grep $3
+            echo "$SECRET_JSON" | jq -r '.data | keys[] as $k | "\($k): \(.[$k] | @base64d)"' | grep "$3"
         ;;
         * )
             echo "Not overwriting, exiting"
@@ -70,7 +70,7 @@ if [ "$COMMAND" == "edit" ]; then
         ;;
     esac
   fi
-  VALUE=$(echo -n $4 | base64)
+  VALUE="$(echo -n "$4" | base64)"
   kubectl get secret "$SECRET" -o json | jq --arg VALUE "$VALUE" --arg KEY "$3" '.data[$KEY]=$VALUE' | kubectl apply -f -
   exit 0
 fi

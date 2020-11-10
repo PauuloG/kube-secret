@@ -1,5 +1,5 @@
 # kube-secret
-Read and edit kubernetes secret without complex piping.
+Read and edit kubernetes secret without remembering tricky one-liners.
 
 ```bash
 INFO: USAGE: /usr/local/bin/kube-secret <command> <secretname> <keyname> <keyvalue>
